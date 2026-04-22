@@ -701,9 +701,9 @@ export default function App() {
             <div className="flex flex-col">
                <span className="text-[7px] text-blue-400 font-bold tracking-widest uppercase">MARKET_PRICE</span>
                <div className="flex items-baseline gap-1.5">
-                  <span className="text-[12px] md:text-[14px] text-white font-black leading-none">${fullState.current_metrics.price.toFixed(4)}</span>
-                  <span className={`text-[8px] font-bold ${fullState.current_metrics.priceChange24h >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                    {fullState.current_metrics.priceChange24h >= 0 ? '▲' : '▼'}{Math.abs(fullState.current_metrics.priceChange24h).toFixed(2)}%
+                  <span className="text-[12px] md:text-[14px] text-white font-black leading-none">${(fullState.current_metrics.price || 0).toFixed(4)}</span>
+                  <span className={`text-[8px] font-bold ${(fullState.current_metrics.priceChange24h || 0) >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                    {(fullState.current_metrics.priceChange24h || 0) >= 0 ? '▲' : '▼'}{Math.abs(fullState.current_metrics.priceChange24h || 0).toFixed(2)}%
                   </span>
                </div>
             </div>
@@ -712,11 +712,11 @@ export default function App() {
           <div className="grid grid-cols-1 gap-1 w-full">
             <div className="flex justify-between items-center bg-white/5 border border-white/5 px-2 py-1 rounded">
                <span className="text-[6px] text-white/40 uppercase">Market Cap</span>
-               <span className="text-[8px] text-white/80 font-bold">${(fullState.current_metrics.marketCap / 1e9).toFixed(2)}B</span>
+               <span className="text-[8px] text-white/80 font-bold">${((fullState.current_metrics.marketCap || 0) / 1e9).toFixed(2)}B</span>
             </div>
             <div className="flex justify-between items-center bg-white/5 border border-white/5 px-2 py-1 rounded">
                <span className="text-[6px] text-white/40 uppercase">Hashrate</span>
-               <span className="text-[8px] text-blue-400/80 font-bold">{(fullState.current_metrics.hashrate / 1000).toFixed(2)} PH/s</span>
+               <span className="text-[8px] text-blue-400/80 font-bold">{((fullState.current_metrics.hashrate || 0) / 1000).toFixed(2)} PH/s</span>
             </div>
             {fullState.current_metrics.lastSyncTime && (
               <div className="flex justify-end pr-1 mt-1">
