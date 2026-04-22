@@ -1,0 +1,6 @@
+{
+  "name": "Kaspa Galaxy Station",
+  "description": "Kaspa Galaxy Station is a high-fidelity 3D mission control center for the Kaspa BlockDAG network. It provides live mainnet telemetry, neural network intelligence, and professional market analysis through an immersive sci-fi interface. Monitor live TPS, hashrate, and protocol milestones in real-time.",
+  "requestFramePermissions": [],
+  "majorCapabilities": []
+}
