@@ -1,9 +1,14 @@
 import express from "express";
-import { createServer as createViteServer } from "vite";
 import path from "path";
 import crypto from "crypto";
 import Parser from 'rss-parser';
 import cors from "cors";
+
+// We'll dynamic import Vite only in development to keep the production build lean and Vercel-compatible
+async function getViteServer() {
+  const { createServer } = await import("vite");
+  return createServer;
+}
 
 const rssParser = new Parser({
   headers: {
@@ -412,9 +417,12 @@ async function syncGlobalIntelligence() {
   }
 }
 
-// Immediately trigger cache pre-warming, then loop every 60 seconds.
-syncGlobalIntelligence();
-setInterval(syncGlobalIntelligence, 60000);
+// In standard server environments, we pre-warm the cache and setup a persistent heartbeat.
+// In serverless (Vercel), we rely on the 'Lazy Sync' check in the /api/state route to fetch data on-demand.
+if (!process.env.VERCEL) {
+  syncGlobalIntelligence();
+  setInterval(syncGlobalIntelligence, 60000);
+}
 
 async function startServer() {
   const app = express();
@@ -612,25 +620,45 @@ async function startServer() {
   });
 
   // ---- Vite Middleware (must be after API routes) ----
-  if (process.env.NODE_ENV !== "production") {
+  if (process.env.NODE_ENV !== "production" && !process.env.VERCEL) {
+    const createViteServer = await getViteServer();
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: "spa",
     });
     app.use(vite.middlewares);
   } else {
-    const distPath = path.join(process.cwd(), "dist");
+    // In production (including Vercel), serve the built dist folder
+    const distPath = path.resolve(process.cwd(), "dist");
     app.use(express.static(distPath));
     // Express 4 uses '*' for catch-all fallback
     app.get("*", (req, res) => {
-      res.sendFile(path.join(distPath, "index.html"));
+      const indexPath = path.resolve(distPath, "index.html");
+      res.sendFile(indexPath, (err) => {
+        if (err) {
+          console.error("[SERVER]: Critical Error - index.html not found at", indexPath);
+          res.status(500).send("Galaxy Station: Static Assets Not Found. Ensure 'npm run build' was successful.");
+        }
+      });
     });
   }
 
-  app.listen(PORT, "0.0.0.0", () => {
-    console.log(`Server running on http://localhost:${PORT}`);
-    console.log(`State Orchestrator Edge Worker ready at /api/state`);
-  });
+  // On Vercel, we don't call app.listen() directly; Vercel handles the lifecycle.
+  if (process.env.VERCEL) {
+    console.log("[SERVER]: Galaxy Station initialized on Vercel Edge.");
+  } else {
+    app.listen(PORT, "0.0.0.0", () => {
+      console.log(`Server running on http://localhost:${PORT}`);
+      console.log(`State Orchestrator Edge Worker ready at /api/state`);
+    });
+  }
+  
+  return app;
 }
 
-startServer();
+// Export the app instance for Vercel's serverless handler
+const appPromise = startServer();
+export default async (req: any, res: any) => {
+  const app = await appPromise;
+  return app(req, res);
+};

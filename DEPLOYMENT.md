@@ -33,10 +33,10 @@ These platforms support "Persistent Servers," which are better for the 24/7 back
 ---
 
 ## 🛠️ Debugging the Heartbeat
-If the dashboard loads but "Last Sync" is blank or the Radio is silent:
-1. Verify the `AGENT_SIGNING_KEY` is present.
-2. Check your platform logs for `[CORE_STORE] Telemetry Heartbeat Sync`.
-3. If using Vercel, visit `/api/state` once manually to "wake up" the telemetry engine if it has been idle.
+If you see "Galaxy Station: Static Assets Not Found":
+1. This means the server started but the `dist` folder is missing.
+2. Ensure you have the **"Framework Preset"** in Vercel set to **"Vite"** or **"Other"** (with `npm run build` as the command).
+3. We have updated `vercel.json` with `includeFiles` to force Vercel to bundle the React frontend into the serverless function.
 
 ---
-**Mission Certified for External Distribution.**
+**Mission Certified and Hardened for Vercel Serverless Architecture.**
