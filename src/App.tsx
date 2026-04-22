@@ -605,49 +605,19 @@ export default function App() {
 
   // Poll the State Orchestrator
   useEffect(() => {
-    let failCount = 0;
     const orchestratorPoll = setInterval(async () => {
       try {
         const response = await fetch('/api/state');
         if (response.ok) {
           const data = await response.json();
           setFullState(data);
-          failCount = 0; // Reset on success
           
           if (data.changed && data.packet) {
             setAgentData(data.packet);
           }
-        } else {
-          throw new Error('Endpoint unreachable');
         }
       } catch (err) {
-        failCount++;
-        // If the backend is unreachable (e.g. static hosting on 4Everland), 
-        // fall back to direct Kaspa API calls for core telemetry
-        if (failCount > 2) {
-          try {
-            const [priceRes, hashrateRes] = await Promise.all([
-              fetch('https://api.kaspa.org/info/price'),
-              fetch('https://api.kaspa.org/info/hashrate')
-            ]);
-            if (priceRes.ok && hashrateRes.ok) {
-              const price = await priceRes.json();
-              const hashrate = await hashrateRes.json();
-              setFullState((prev: any) => ({
-                ...prev,
-                current_metrics: {
-                  ...prev?.current_metrics,
-                  price: price.price || 0.034,
-                  hashrate: hashrate.hashrate || 0,
-                  lastSyncTime: new Date().toISOString(),
-                  heuristicNews: prev?.current_metrics?.heuristicNews || ["[OFFLINE_FALLBACK]: backend unreachable. serving raw node data."]
-                }
-              }));
-            }
-          } catch (staticErr) {
-            // All endpoints unreachable
-          }
-        }
+        // Silent catch for orchestrator offline state
       }
     }, 5000); 
     

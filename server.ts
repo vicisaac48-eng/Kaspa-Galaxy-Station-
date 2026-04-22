@@ -330,11 +330,8 @@ async function fetchNodeHealth(url: string) {
 }
 
 // ---- Background Worker: Infinite Multi-Source Market & News Aggregator ----
-// Optimized for Serverless: Triggers lazily or via interval if environment allows.
-let isSyncing = false;
+// This runs globally on the server to prevent excessive rate-limiting and make UI incredibly fast.
 async function syncGlobalIntelligence() {
-  if (isSyncing) return;
-  isSyncing = true;
   console.log("[SRE] Initiating cross-source external market & news synchronization...");
   try {
     const [priceData, marketCapData, coinGeckoData, newsGroup1, newsGroup2, newsGroup3] = await Promise.all([
@@ -406,32 +403,20 @@ async function syncGlobalIntelligence() {
     console.log(`[CORE_STORE] Telemetry Heartbeat Sync: ${kaspaMetrics.lastSyncTime}`);
   } catch (err) {
     console.error("[SRE] Cross-source external synchronicity failed. Using existing cache.", err);
-  } finally {
-    isSyncing = false;
   }
 }
 
-// Background loop for long-running environments (like AI Studio / Cloud Run)
-if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
-  syncGlobalIntelligence();
-  setInterval(syncGlobalIntelligence, 60000);
-}
+// Immediately trigger cache pre-warming, then loop every 60 seconds.
+syncGlobalIntelligence();
+setInterval(syncGlobalIntelligence, 60000);
 
 async function startServer() {
   const app = express();
-  const PORT = Number(process.env.PORT) || 3000;
+  const PORT = 3000;
 
   // ---- State Orchestrator API Edge Worker ----
   app.get("/api/state", async (req, res) => {
     try {
-      // Lazy-Sync for Serverless environments: If cache is > 60s old, trigger a refresh
-      const lastSync = new Date(kaspaMetrics.lastSyncTime).getTime();
-      const now = Date.now();
-      if (now - lastSync > 60000 && !isSyncing) {
-         // On serverless, we await to ensure data is fresh for the first visitor after cold start
-         await syncGlobalIntelligence();
-      }
-
       // 1. Fetch real-time latency & health from real APIs + blockdag status
       const [kaspaRest, kaspaHashrate, kaspaHalving, kaspaBlockdag] = await Promise.all([
         fetchNodeHealth('https://api.kaspa.org/info/network'),
@@ -630,13 +615,6 @@ async function startServer() {
     console.log(`Server running on http://localhost:${PORT}`);
     console.log(`State Orchestrator Edge Worker ready at /api/state`);
   });
-
-  return app;
 }
 
-export const appPromise = startServer();
-// Export the app for Vercel
-export default async (req: any, res: any) => {
-  const app = await appPromise;
-  return app(req, res);
-};
+startServer();
