@@ -4,15 +4,39 @@ import { OrbitControls, Stars, Environment, Html, QuadraticBezierLine } from '@r
 import * as THREE from 'three';
 import gsap from 'gsap';
 import { playSelectSound } from './lib/audio';
+import { fetchKaspaStats, STATION_LOGS, getSeasonalAudio } from './services/kaspaService';
 import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, Tooltip } from 'recharts';
-import { Volume2, VolumeX, Radio, Zap } from 'lucide-react';
+import { VolumeX, Radio, Zap, Settings, X, Volume2, Bell, BellOff } from 'lucide-react';
+
+interface KaspaMetrics {
+  tps: number;
+  difficulty: number;
+  hashrate: number;
+  price: number;
+  priceChange24h: number | null;
+  marketCap: number;
+  lastSyncTime: string;
+  news?: any[];
+  transactions?: any[];
+  heuristicNews?: string[];
+  ambientTheme?: {
+    season: string;
+    stream: string;
+    vibe: string;
+    station: string;
+  };
+}
+
+interface StationState {
+  current_metrics: KaspaMetrics;
+}
 
 function HorizontalNewsTicker({ newsItems, isProcessing }: { newsItems: string[], isProcessing: boolean }) {
   if (isProcessing) {
     return (
       <div className="flex-1 overflow-hidden h-[12px] relative flex items-center">
         <div className="text-[9px] text-white/70 font-medium tracking-tight animate-pulse">
-           SYSTEM_INITIALIZING: SYNCING_GLOBAL_SIGNALS...
+           SYSTEM_INITIALIZING: CONNECTING_GLOBAL_SIGNALS...
         </div>
       </div>
     );
@@ -30,8 +54,7 @@ function HorizontalNewsTicker({ newsItems, isProcessing }: { newsItems: string[]
   );
 }
 
-function MasterDetailsPanel({ data, subType, typeColor, stats, agentData, fullState, onClose, onInteractionState, className }: any) {
-  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+function MasterDetailsPanel({ data, subType, typeColor, stats, agentData, fullState, onClose, onInteractionState, className, isMobile }: any) {
   return (
     <div className="relative group z-[200]">
       {/* High-Precision Technical Tether (Professional HUD Anchoring) */}
@@ -155,7 +178,7 @@ function MasterDetailsPanel({ data, subType, typeColor, stats, agentData, fullSt
               DIFFICULTY
             </span>
             <span className="text-[11px] md:text-[12px] text-white font-mono block font-bold">
-              {fullState?.current_metrics?.difficulty ? Number(fullState.current_metrics.difficulty).toPrecision(4) : 'SYNCING...'}
+              {fullState?.current_metrics?.difficulty ? Number(fullState.current_metrics.difficulty).toPrecision(4) : '---'}
             </span>
           </div>
           <div className="bg-white/10 p-3 rounded-lg border border-white/20 text-right">
@@ -371,7 +394,7 @@ const CAMERA_SETTINGS = {
   idle: { lerp: 0.08, posLerp: 0.06 }
 };
 
-function CameraController({ focusTarget, selectedId }: { focusTarget: THREE.Vector3 | null, selectedId: string | null }) {
+function CameraController({ focusTarget, selectedId, isMobile }: { focusTarget: THREE.Vector3 | null, selectedId: string | null, isMobile: boolean }) {
   const { camera, controls, scene } = useThree<any>();
   const lastTarget = useRef(new THREE.Vector3());
   const activeFocusId = useRef<string | null>(null);
@@ -382,7 +405,6 @@ function CameraController({ focusTarget, selectedId }: { focusTarget: THREE.Vect
     
     if (!selectedId) {
       activeFocusId.current = null;
-      const isMobile = window.innerWidth < 768;
       // Push camera back drastically to see the outermost planets (Pluto is at distance 81)
       const homePos = isMobile ? CAMERA_SETTINGS.home.mobile : CAMERA_SETTINGS.home.desktop;
       
@@ -460,8 +482,26 @@ function TimeScaleController({ isInteracting, timeScaleRef }: { isInteracting: b
 
 export default function App() {
   const [agentData, setAgentData] = useState<any>(null);
-  const [fullState, setFullState] = useState<any>(null);
-  const [intelligentNews, setIntelligentNews] = useState<string[]>(["SYSTEM_INITIALIZING: SYNCING_GLOBAL_SIGNALS..."]);
+  const [fullState, setFullState] = useState<StationState>({
+    current_metrics: {
+      tps: 0.1,
+      difficulty: 0,
+      hashrate: 0,
+      price: 0,
+      priceChange24h: null,
+      marketCap: 0,
+      lastSyncTime: "",
+      heuristicNews: [
+        "[STATION_ONLINE]: Establishing direct BlockDAG uplink...",
+        "[STATION_ONLINE]: Synchronizing telemetry pathways..."
+      ],
+      ambientTheme: getSeasonalAudio()
+    }
+  });
+  const [intelligentNews, setIntelligentNews] = useState<string[]>([
+    "[STATION_ONLINE]: Awaiting decentralized signal from Kaspa relays...",
+    "[STATION_ONLINE]: Reconfirming cryptographic integrity of incoming news feed..."
+  ]);
   const [isAiProcessing, setIsAiProcessing] = useState<boolean>(false);
   const [isInteractingWithPanel, setIsInteractingWithPanel] = useState<boolean>(false);
   const timeScaleRef = useRef<number>(1);
@@ -472,8 +512,19 @@ export default function App() {
   const [tourIndex, setTourIndex] = useState<number>(-1);
   const tourTimeoutRef = useRef<any>(null);
   const [audioEnabled, setAudioEnabled] = useState<boolean>(false);
+  const [volume, setVolume] = useState<number>(0.20);
+  const [notifications, setNotifications] = useState<boolean>(true);
+  const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const playPromiseRef = useRef<Promise<void> | null>(null);
+  const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth < 768 : false);
+
+  // Unified Resize Handler
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // Safely mount audio element to avoid ref issues when dynamically switching src
   useEffect(() => {
@@ -481,7 +532,7 @@ export default function App() {
     if (!audioRef.current) {
         const audio = new Audio();
         audio.loop = true;
-        audio.volume = 0.20;
+        audio.volume = volume;
         audio.crossOrigin = "anonymous";
         
         // Listen for errors to reset state
@@ -560,8 +611,8 @@ export default function App() {
 
   // Sync volume safely
   useEffect(() => {
-    if (audioRef.current) audioRef.current.volume = 0.20;
-  }, [audioEnabled]);
+    if (audioRef.current) audioRef.current.volume = volume;
+  }, [audioEnabled, volume]);
   
   // Auto Tour Orchestration
   const tourSequence = useMemo(() => {
@@ -613,48 +664,40 @@ export default function App() {
     return () => clearTimeout(tourTimeoutRef.current);
   }, [isAutoTourMode, tourIndex, tourSequence]);
 
-  // Poll the State Orchestrator
+  // Poll the Kaspa Network Directly (Decentralized Architecture)
   useEffect(() => {
-    const orchestratorPoll = setInterval(async () => {
-      try {
-        const response = await fetch('/api/state');
-        if (response.ok) {
-          const data = await response.json();
-          setFullState(data);
-          
-          if (data.changed && data.packet) {
-            setAgentData(data.packet);
+    const fetchTelemetry = async () => {
+      const data = await fetchKaspaStats();
+      if (data) {
+        setFullState(prevState => ({ 
+          current_metrics: {
+            ...prevState.current_metrics,
+            ...data.metrics,
+            news: [], 
+            heuristicNews: data.metrics.heuristicNews || STATION_LOGS
           }
-        }
-      } catch (err) {
-        // Silent catch for orchestrator offline state
+        }));
+        setAgentData(data.packet);
       }
-    }, 5000); 
+    };
+
+    fetchTelemetry(); // Initial burst
+    const orchestratorPoll = setInterval(fetchTelemetry, 1500); 
     
     return () => clearInterval(orchestratorPoll);
   }, []);
 
-  // Local NLP News Synchronization (Seamless Backend Fallback Integration)
+  // Local News Synchronization (Balanced Visual Feedback)
   const heuristicNewsStr = JSON.stringify(fullState?.current_metrics?.heuristicNews || []);
   useEffect(() => {
-    const heuristicNews = fullState?.current_metrics?.heuristicNews;
-    if (!heuristicNews || heuristicNews.length === 0) return;
-
+    const heuristicNews = fullState?.current_metrics?.heuristicNews || STATION_LOGS;
+    
     const syncNews = () => {
-      setIsAiProcessing(true);
-      
-      // Simulate a brief heuristic processing phase for the HUD visual effect matching the original speed
-      setTimeout(() => {
-        if (heuristicNews && heuristicNews.length > 0) {
-           setIntelligentNews(heuristicNews);
-        } else {
-           setIntelligentNews(["[SYSTEM]: Telemetry synced, awaiting active data feed."]);
-        }
-        setIsAiProcessing(false);
-      }, 1200);
+      // Remove intentional latency for instant-on behavior
+      setIntelligentNews(heuristicNews);
+      setIsAiProcessing(false);
     };
 
-    // Run the local NLP engine Sync based on incoming array updates
     syncNews();
   }, [heuristicNewsStr]);
 
@@ -689,15 +732,23 @@ export default function App() {
                  
                  {audioEnabled ? (
                    <div className="flex gap-[2px] items-end h-[10px] mr-1">
-                      <div className="w-[2px] bg-blue-400/80 rounded-t-sm animate-[bounce_0.9s_infinite] h-[6px]" />
-                      <div className="w-[2px] bg-blue-400/80 rounded-t-sm animate-[bounce_1.1s_infinite] h-[10px]" />
-                      <div className="w-[2px] bg-blue-400/80 rounded-t-sm animate-[bounce_0.8s_infinite] h-[4px]" />
+                       <div className="w-[2px] bg-blue-400/80 rounded-t-sm animate-[bounce_0.9s_infinite] h-[6px]" />
+                       <div className="w-[2px] bg-blue-400/80 rounded-t-sm animate-[bounce_1.1s_infinite] h-[10px]" />
+                       <div className="w-[2px] bg-blue-400/80 rounded-t-sm animate-[bounce_0.8s_infinite] h-[4px]" />
                    </div>
                  ) : (
                    <span className="text-[9px] font-mono text-white/30 uppercase tracking-wider pr-1">Music</span>
                  )}
               </button>
             )}
+
+            <button 
+              onClick={() => { playSelectSound(); setIsSettingsOpen(true); }}
+              className="pointer-events-auto bg-white/5 hover:bg-white/10 border border-white/10 rounded-full p-1.5 px-3 backdrop-blur-md transition-all shadow-md text-white/40 hover:text-white"
+              title="System Preferences"
+            >
+              <Settings size={14} />
+            </button>
           </div>
         </div>
       </div>
@@ -711,10 +762,18 @@ export default function App() {
             <div className="flex flex-col">
                <span className="text-[7px] text-blue-400 font-bold tracking-widest uppercase">MARKET_PRICE</span>
                <div className="flex items-baseline gap-1.5">
-                  <span className="text-[12px] md:text-[14px] text-white font-black leading-none">${(fullState.current_metrics.price || 0).toFixed(4)}</span>
-                  <span className={`text-[8px] font-bold ${(fullState.current_metrics.priceChange24h || 0) >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                    {(fullState.current_metrics.priceChange24h || 0) >= 0 ? '▲' : '▼'}{Math.abs(fullState.current_metrics.priceChange24h || 0).toFixed(2)}%
+                  <span className="text-[12px] md:text-[14px] text-white font-black leading-none">
+                    {fullState.current_metrics.price > 0 ? (
+                      `$${fullState.current_metrics.price.toFixed(4)}`
+                    ) : (
+                      <span className="opacity-50 animate-pulse">$-.----</span>
+                    )}
                   </span>
+                  {fullState.current_metrics.price > 0 && typeof fullState.current_metrics.priceChange24h === 'number' && (
+                    <span className={`text-[8px] font-bold ${fullState.current_metrics.priceChange24h >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                      {fullState.current_metrics.priceChange24h >= 0 ? '▲' : '▼'}{Math.abs(fullState.current_metrics.priceChange24h).toFixed(2)}%
+                    </span>
+                  )}
                </div>
             </div>
           </div>
@@ -722,15 +781,27 @@ export default function App() {
           <div className="grid grid-cols-1 gap-1 w-full">
             <div className="flex justify-between items-center bg-white/5 border border-white/5 px-2 py-1 rounded">
                <span className="text-[6px] text-white/40 uppercase">Market Cap</span>
-               <span className="text-[8px] text-white/80 font-bold">${((fullState.current_metrics.marketCap || 0) / 1e9).toFixed(2)}B</span>
+               <span className="text-[8px] text-white/80 font-bold">
+                 {fullState.current_metrics.marketCap > 0 ? (
+                   `$${(fullState.current_metrics.marketCap / 1e9).toFixed(2)}B`
+                 ) : (
+                   <span className="opacity-50 animate-pulse">$--.--B</span>
+                 )}
+               </span>
             </div>
             <div className="flex justify-between items-center bg-white/5 border border-white/5 px-2 py-1 rounded">
                <span className="text-[6px] text-white/40 uppercase">Hashrate</span>
-               <span className="text-[8px] text-blue-400/80 font-bold">{((fullState.current_metrics.hashrate || 0) / 1000).toFixed(2)} PH/s</span>
+               <span className="text-[8px] text-blue-400/80 font-bold">
+                 {fullState.current_metrics.hashrate > 0 ? (
+                   `${(fullState.current_metrics.hashrate / 1000).toFixed(2)} PH/s`
+                 ) : (
+                   <span className="opacity-50 animate-pulse">--.-- PH/s</span>
+                 )}
+               </span>
             </div>
             {fullState.current_metrics.lastSyncTime && (
               <div className="flex justify-end pr-1 mt-1">
-                 <span className="text-[5px] text-white/20 uppercase tracking-[0.2em]">Last Sync: {new Date(fullState.current_metrics.lastSyncTime).toLocaleTimeString()}</span>
+                 <span className="text-[5px] text-white/20 uppercase tracking-[0.2em]">LiveData: {new Date(fullState.current_metrics.lastSyncTime).toLocaleTimeString()}</span>
               </div>
             )}
           </div>
@@ -755,6 +826,53 @@ export default function App() {
 
       {/* Kaspa Global Consensus Telemetry - Top Right (MOVED TO HOLOGRAM) */}
       
+      {/* Settings Modal overlay */}
+      {isSettingsOpen && (
+        <div className="absolute inset-0 z-[300] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-[#0c0c14]/90 border border-blue-500/30 rounded-xl p-6 w-full max-w-xs shadow-[0_10px_40px_rgba(0,0,0,0.8)] pointer-events-auto flex flex-col gap-6">
+            <div className="flex items-center justify-between border-b border-white/10 pb-4">
+              <h2 className="text-white text-sm font-bold tracking-widest uppercase flex items-center gap-2 font-mono">
+                <Settings size={16} className="text-blue-400" /> System Params
+              </h2>
+              <button onClick={() => { playSelectSound(); setIsSettingsOpen(false); }} className="text-white/40 hover:text-white transition-colors">
+                <X size={18} />
+              </button>
+            </div>
+            
+            <div className="flex flex-col gap-6">
+              {/* Volume Control */}
+              <div className="flex flex-col gap-3">
+                <div className="flex justify-between items-center text-[10px] text-white/70 font-mono tracking-widest uppercase">
+                  <span className="flex items-center gap-2"><Volume2 size={12} className="text-blue-400"/> Audio Level</span>
+                  <span className="text-blue-200">{Math.round(volume * 100)}%</span>
+                </div>
+                <input 
+                  type="range" 
+                  min="0" max="1" step="0.01" 
+                  value={volume}
+                  onChange={(e) => setVolume(parseFloat(e.target.value))}
+                  className="w-full h-1 bg-white/10 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                />
+              </div>
+
+              {/* Notifications Toggle */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-[10px] text-white/70 font-mono tracking-widest uppercase">
+                  {notifications ? <Bell size={12} className="text-blue-400"/> : <BellOff size={12} className="text-white/40"/>}
+                  <span>HUD Notifications</span>
+                </div>
+                <button 
+                  onClick={() => setNotifications(!notifications)}
+                  className={`w-9 h-5 rounded-full transition-colors relative ${notifications ? 'bg-blue-500' : 'bg-white/10 border border-white/10'}`}
+                >
+                  <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform ${notifications ? 'translate-x-4.5' : 'translate-x-0.5'}`} />
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* 3D Canvas */}
       <Canvas 
         camera={{ position: [0, 65, 105], fov: 50 }} 
@@ -773,7 +891,7 @@ export default function App() {
         <pointLight position={[0, 3, 0]} intensity={150} color="#77bbff" distance={100} decay={2} />
         
         <TimeScaleController isInteracting={isInteractingWithPanel} timeScaleRef={timeScaleRef} />
-        <CameraController focusTarget={focusTarget} selectedId={selectedObjectId} />
+        <CameraController focusTarget={focusTarget} selectedId={selectedObjectId} isMobile={isMobile} />
         <Galaxy isPaused={isInteractingWithPanel} speedFactor={timeScaleRef.current} />
         <Planets 
           agentData={agentData} 
@@ -784,6 +902,7 @@ export default function App() {
           onInteractionState={setIsInteractingWithPanel}
           isPaused={isInteractingWithPanel}
           speedFactor={timeScaleRef.current}
+          isMobile={isMobile}
         />
         <KaspaSun 
           agentData={agentData}
@@ -794,6 +913,7 @@ export default function App() {
           onInteractionState={setIsInteractingWithPanel}
           isPaused={isInteractingWithPanel}
           speedFactor={timeScaleRef.current}
+          isMobile={isMobile}
         />
         <DataNodes 
           agentData={agentData} 
@@ -804,6 +924,7 @@ export default function App() {
           onInteractionState={setIsInteractingWithPanel}
           isPaused={isInteractingWithPanel}
           speedFactor={timeScaleRef.current}
+          isMobile={isMobile}
         />
         <BinaryAurora agentData={agentData} />
         
@@ -903,7 +1024,7 @@ function Galaxy({ isPaused, speedFactor = 1 }: { isPaused?: boolean, speedFactor
   );
 }
 
-function KaspaSun({ agentData, fullState, setFocusTarget, isSelected, onInteract, isPaused, onInteractionState, speedFactor = 1 }: { agentData: any, fullState: any, setFocusTarget: any, isSelected: boolean, onInteract: any, isPaused?: boolean, onInteractionState?: any, speedFactor?: number }) {
+function KaspaSun({ agentData, fullState, setFocusTarget, isSelected, onInteract, isPaused, onInteractionState, speedFactor = 1, isMobile }: { agentData: any, fullState: any, setFocusTarget: any, isSelected: boolean, onInteract: any, isPaused?: boolean, onInteractionState?: any, speedFactor?: number, isMobile: boolean }) {
   const meshRef = useRef<THREE.Mesh>(null);
   const accretionDiskRef = useRef<THREE.Mesh>(null);
 
@@ -967,7 +1088,7 @@ function KaspaSun({ agentData, fullState, setFocusTarget, isSelected, onInteract
 
       {/* Floating Detail */}
       {isSelected && (
-        <Html position={[typeof window !== 'undefined' && window.innerWidth < 768 ? 1.5 : 5, typeof window !== 'undefined' && window.innerWidth < 768 ? 3.5 : 5, 0]} center zIndexRange={[1000, 0]} className="pointer-events-none">
+        <Html position={[isMobile ? 1.5 : 5, isMobile ? 3.5 : 5, 0]} center zIndexRange={[1000, 0]} className="pointer-events-none">
           <MasterDetailsPanel 
             data={SUN_DATA}
             subType="CORE_ENGINE"
@@ -976,6 +1097,7 @@ function KaspaSun({ agentData, fullState, setFocusTarget, isSelected, onInteract
             fullState={fullState}
             onClose={() => onInteract()}
             onInteractionState={onInteractionState}
+            isMobile={isMobile}
             className="w-[240px] md:w-[500px]"
           />
         </Html>
@@ -1020,7 +1142,7 @@ function KaspaSun({ agentData, fullState, setFocusTarget, isSelected, onInteract
   );
 }
 
-export function Planets({ agentData, fullState, setFocusTarget, selectedPlanet, setSelectedPlanet, onInteractionState, isPaused, speedFactor = 1 }: { agentData: any, fullState: any, setFocusTarget: any, selectedPlanet: string | null, setSelectedPlanet: any, onInteractionState: any, isPaused?: boolean, speedFactor?: number }) {
+export function Planets({ agentData, fullState, setFocusTarget, selectedPlanet, setSelectedPlanet, onInteractionState, isPaused, speedFactor = 1, isMobile }: { agentData: any, fullState: any, setFocusTarget: any, selectedPlanet: string | null, setSelectedPlanet: any, onInteractionState: any, isPaused?: boolean, speedFactor?: number, isMobile: boolean }) {
   const planetsData = useMemo(() => {
     // Relative sizes and distances based on scientific approx, massively scaled up for visibility
     const orbitalDistances = [10, 16, 22, 29, 39, 50, 61, 71, 81];
@@ -1058,13 +1180,14 @@ export function Planets({ agentData, fullState, setFocusTarget, selectedPlanet, 
           onInteractionState={onInteractionState}
           isPaused={isPaused}
           speedFactor={speedFactor}
+          isMobile={isMobile}
         />
       ))}
     </>
   );
 }
 
-function Planet({ distance, size, speed, angle, startY, color, hasRings, hasMoons, id, module, isSelected, onInteract, agentData, fullState, setFocusTarget, onInteractionState, isPaused, speedFactor = 1 }: any) {
+function Planet({ distance, size, speed, angle, startY, color, hasRings, hasMoons, id, module, isSelected, onInteract, agentData, fullState, setFocusTarget, onInteractionState, isPaused, speedFactor = 1, isMobile }: any) {
   const groupRef = useRef<THREE.Group>(null);
   const meshRef = useRef<THREE.Mesh>(null);
   const moonsGroupRef = useRef<THREE.Group>(null);
@@ -1158,7 +1281,7 @@ function Planet({ distance, size, speed, angle, startY, color, hasRings, hasMoon
 
         {/* Floating Detail */}
         {isSelected && (
-          <Html position={[typeof window !== 'undefined' && window.innerWidth < 768 ? size : size + 4, typeof window !== 'undefined' && window.innerWidth < 768 ? size + 2 : size + 4, 0]} center zIndexRange={[1000, 0]} className="pointer-events-none">
+          <Html position={[isMobile ? size : size + 4, isMobile ? size + 2 : size + 4, 0]} center zIndexRange={[1000, 0]} className="pointer-events-none">
             <MasterDetailsPanel 
               data={module}
               subType="PROTOCOL_LAYER"
@@ -1167,6 +1290,7 @@ function Planet({ distance, size, speed, angle, startY, color, hasRings, hasMoon
               fullState={fullState}
               onClose={() => onInteract(null)}
               onInteractionState={onInteractionState}
+              isMobile={isMobile}
               className="w-[240px] md:w-[500px]"
             />
           </Html>
@@ -1218,7 +1342,7 @@ function Planet({ distance, size, speed, angle, startY, color, hasRings, hasMoon
   );
 }
 
-export function DataNodes({ agentData, fullState, setFocusTarget, selectedNode, setSelectedNode, onInteractionState, isPaused, speedFactor = 1 }: { agentData: any, fullState: any, setFocusTarget: any, selectedNode: string | null, setSelectedNode: any, onInteractionState: any, isPaused?: boolean, speedFactor?: number }) {
+export function DataNodes({ agentData, fullState, setFocusTarget, selectedNode, setSelectedNode, onInteractionState, isPaused, speedFactor = 1, isMobile }: { agentData: any, fullState: any, setFocusTarget: any, selectedNode: string | null, setSelectedNode: any, onInteractionState: any, isPaused?: boolean, speedFactor?: number, isMobile: boolean }) {
   return (
     <>
       {FLOATING_NODES.map((node) => (
@@ -1233,13 +1357,14 @@ export function DataNodes({ agentData, fullState, setFocusTarget, selectedNode, 
            onInteractionState={onInteractionState}
            isPaused={isPaused} 
            speedFactor={speedFactor}
+           isMobile={isMobile}
          />
       ))}
     </>
   );
 }
 
-function DataNodeItem({ node, agentData, fullState, setFocusTarget, selectedNode, setSelectedNode, onInteractionState, isPaused, speedFactor = 1 }: any) {
+function DataNodeItem({ node, agentData, fullState, setFocusTarget, selectedNode, setSelectedNode, onInteractionState, isPaused, speedFactor = 1, isMobile }: any) {
   const visualGroupRef = useRef<THREE.Group>(null);
   const isSelected = selectedNode === node.id;
   const nodeStats = agentData?.polw?.nodes?.[node.id];
@@ -1261,7 +1386,7 @@ function DataNodeItem({ node, agentData, fullState, setFocusTarget, selectedNode
       <group ref={visualGroupRef}>
         <Html center zIndexRange={[100, 0]} style={{ pointerEvents: 'none' }}>
           <div className="flex flex-col items-center">
-            {isSelected && typeof window !== 'undefined' && window.innerWidth < 768 && (
+            {isSelected && isMobile && (
               <div className="mb-4 ml-6 pointer-events-none relative">
                  <MasterDetailsPanel 
                   data={node}
@@ -1275,6 +1400,7 @@ function DataNodeItem({ node, agentData, fullState, setFocusTarget, selectedNode
                     setFocusTarget(null);
                   }}
                   onInteractionState={onInteractionState}
+                  isMobile={isMobile}
                   className="w-[240px] md:w-[500px]"
                 />
               </div>
@@ -1304,7 +1430,7 @@ function DataNodeItem({ node, agentData, fullState, setFocusTarget, selectedNode
               </div>
             </div>
 
-            {isSelected && (typeof window === 'undefined' || window.innerWidth >= 768) && (
+            {isSelected && !isMobile && (
               <div className="mt-8 ml-8 pointer-events-none">
                 <MasterDetailsPanel 
                   data={node}
@@ -1318,13 +1444,14 @@ function DataNodeItem({ node, agentData, fullState, setFocusTarget, selectedNode
                     setFocusTarget(null);
                   }}
                   onInteractionState={onInteractionState}
+                  isMobile={isMobile}
                   className="w-[240px] md:w-[500px]"
                 />
               </div>
             )}
           </div>
         </Html>
-     </group>
+      </group>
     </group>
   );
 }

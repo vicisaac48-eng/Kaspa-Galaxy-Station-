@@ -4,10 +4,10 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "tsx server.ts",
-    "start": "node server.ts",
-    "build": "vite build",
-    "preview": "vite preview",
+    "dev": "vite --port 3000 --host 0.0.0.0",
+    "start": "tsx server.ts",
+    "build": "vite build && ls -la dist",
+    "preview": "vite preview --port 3000 --host 0.0.0.0",
     "clean": "rm -rf dist",
     "lint": "tsc --noEmit"
   },
