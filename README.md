@@ -2,7 +2,7 @@
 
 **The ultimate visual mission control for the Kaspa BlockDAG Network.**
 
-Kaspa Galaxy Station is a high-fidelity, interactive 3D telemetry dashboard designed to provide a real-time "Custom AI NLP agent control dashboard" and real live radio station streaming experience for the Kaspa network. It bridges the gap between complex network data and immersive visual storytelling.
+Kaspa Galaxy Station is a high-fidelity, interactive 3D telemetry dashboard designed to provide a real-time AI NLP agent control dashboard" and real live radio station streaming experience for the Kaspa network. It bridges the gap between complex network data and immersive visual storytelling.
 
 ![Kaspa Galaxy Station Preview](https://picsum.photos/seed/kaspagalaxy/1200/600)
 
