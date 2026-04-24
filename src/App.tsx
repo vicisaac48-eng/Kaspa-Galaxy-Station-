@@ -534,7 +534,6 @@ export default function App() {
         audio.loop = true;
         audio.volume = volume;
         audio.crossOrigin = "anonymous";
-        audio.preload = "auto";
         
         // Listen for errors to reset state
         audio.onerror = () => {
@@ -563,16 +562,15 @@ export default function App() {
         await playPromiseRef.current;
         setAudioEnabled(true);
       } catch (e) {
-        console.log("Autoplay blocked or interrupted. Stream is preloaded for manual activation.");
+        console.log("Autoplay blocked or interrupted.");
       } finally {
         playPromiseRef.current = null;
       }
     };
     
-    // Minimal delay to ensure everything is mounted
-    const t = setTimeout(startAudio, 250);
+    const t = setTimeout(startAudio, 1000);
     return () => clearTimeout(t);
-  }, [fullState?.current_metrics?.ambientTheme?.stream, audioEnabled]);
+  }, [fullState?.current_metrics?.ambientTheme?.stream]);
 
   const toggleAudio = async () => {
     playSelectSound();
@@ -587,21 +585,22 @@ export default function App() {
       const streamUrl = fullState?.current_metrics?.ambientTheme?.stream;
       if (!streamUrl) return;
 
-      // Only set source if it's completely empty or different
-      if (!audio.src || !audio.src.includes(streamUrl)) {
+      if (audio.src !== streamUrl) {
           audio.src = streamUrl;
-          audio.load();
+          audio.load(); // Re-trigger load for the new source
       }
       
-      // Update UI immediately for responsiveness
-      setAudioEnabled(true);
-      
       try {
+        // We use a simpler direct play call to ensure responsiveness
         await audio.play();
+        setAudioEnabled(true);
       } catch (e) {
-        console.warn("Audio Playback failure, retrying...", e);
+        console.warn("Audio Playback: Retrying with direct load...", e);
+        // Force a reload and retry on failure
+        audio.load();
         try {
            await audio.play();
+           setAudioEnabled(true);
         } catch (err) {
            console.error("Audio playback total failure:", err);
            setAudioEnabled(false);
