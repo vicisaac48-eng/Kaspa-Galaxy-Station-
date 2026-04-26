@@ -1,0 +1,12 @@
+# Ensure binary files are treated as such
+*.jar binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.webp binary
+
+# Ensure shell scripts have LF line endings
+*.sh text eol=lf
+gradlew text eol=lf
