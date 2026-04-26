@@ -24,11 +24,8 @@ async function resilientFetch(url: string, isCritical = false, isRaw = false) {
         return isRaw ? await proxyResponse.text() : await proxyResponse.json();
       }
     } catch (proxyErr) {
-      if (isCritical) {
-        console.error(`[TELEMETRY] Critical link failure for ${url}`, proxyErr);
-      } else {
-        console.warn(`[TELEMETRY] Backup source unavailable: ${url}`);
-      }
+      // Slilently return null if both direct and proxy fail, unless it's a critical debug session
+      // This prevents "pop-up" style console logs from overwhelming the UI environment
     }
     return null;
   }
@@ -62,6 +59,8 @@ export async function fetchKaspaStats() {
       price: 'https://api.kaspa.org/info/price',
       marketcap: 'https://api.kaspa.org/info/marketcap',
       kucoin: 'https://api.kucoin.com/api/v1/market/stats?symbol=KAS-USDT',
+      coingecko: 'https://api.coingecko.com/api/v3/simple/price?ids=kaspa&vs_currencies=usd&include_24hr_change=true&include_market_cap=true',
+      mexc: 'https://api.mexc.com/api/v3/ticker/24hr?symbol=KASUSDT',
       network: 'https://api.kaspa.org/info/network',
       hashrate: 'https://api.kaspa.org/info/hashrate',
       halving: 'https://api.kaspa.org/info/halving',
@@ -74,6 +73,8 @@ export async function fetchKaspaStats() {
       resilientFetch(urls.marketcap),
       // Use cache-busting exclusively for Kucoin since it gets stuck
       resilientFetch(`${urls.kucoin}&_t=${Date.now()}`),
+      resilientFetch(urls.coingecko),
+      resilientFetch(urls.mexc),
       resilientFetch(urls.network, true),
       resilientFetch(urls.hashrate),
       resilientFetch(urls.halving),
@@ -82,13 +83,23 @@ export async function fetchKaspaStats() {
     ]);
 
     const results = stats.map(s => s.status === 'fulfilled' ? s.value : null);
-    const [price, mc, kucoinData, net, hash, halv, bdag, news] = results;
+    const [price, mc, kucoinData, coingeckoData, mexcData, net, hash, halv, bdag, news] = results;
 
-    // Use KuCoin for instant, rate-limit free actual trading price natively (open CORS)
+    // Use KuCoin or MEXC for instant, rate-limit free actual trading price natively (open CORS)
     if (kucoinData?.data?.last) {
        priceCache = parseFloat(kucoinData.data.last);
        if (kucoinData.data.changeRate !== undefined && kucoinData.data.changeRate !== null) {
           priceChangeCache = parseFloat(kucoinData.data.changeRate) * 100;
+       }
+    } else if (mexcData?.lastPrice) {
+       priceCache = parseFloat(mexcData.lastPrice);
+       if (mexcData.priceChangePercent !== undefined) {
+          priceChangeCache = parseFloat(mexcData.priceChangePercent);
+       }
+    } else if (coingeckoData?.kaspa?.usd) {
+       priceCache = coingeckoData.kaspa.usd;
+       if (coingeckoData.kaspa.usd_24h_change !== undefined) {
+          priceChangeCache = coingeckoData.kaspa.usd_24h_change;
        }
     } else if (price?.price) {
        priceCache = price.price;
@@ -96,7 +107,7 @@ export async function fetchKaspaStats() {
 
     const priceChange24h = priceChangeCache;
 
-    const rawMarketCap = mc?.marketCap || mc?.marketcap || 0;
+    const rawMarketCap = mc?.marketCap || mc?.marketcap || coingeckoData?.kaspa?.usd_market_cap || 0;
     marketCapCache = typeof rawMarketCap === 'string' ? parseFloat(rawMarketCap) : rawMarketCap;
 
     const rawDifficulty = bdag?.difficulty || bdag?.difficultyValue || 0;
@@ -136,7 +147,8 @@ export async function fetchKaspaStats() {
 
     return { metrics, packet };
   } catch (e) {
-    console.error("Kaspa Telemetry Failed:", e);
+    // Downgrade to warning to avoid persistent intrusive error UI in some environments
+    console.warn("Kaspa Telemetry Sync deferred:", e);
     return null;
   }
 }

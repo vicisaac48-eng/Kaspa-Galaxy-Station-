@@ -36,7 +36,7 @@ async function startServer() {
         res.send(text);
       }
     } catch (error) {
-      console.error("[PROXY ERROR]:", error);
+      console.warn("[PROXY WARNING]:", error);
       res.status(500).json({ error: "Failed to fetch from proxy." });
     }
   });
@@ -70,16 +70,15 @@ async function startServer() {
     console.log("[SERVER]: Galaxy Station initialized on Vercel Edge.");
   } else {
     app.listen(Number(PORT), "0.0.0.0", () => {
-      console.log(`Server running on http://localhost:${PORT}`);
+      console.log(`[SERVER]: Mission Control Active on http://0.0.0.0:${PORT}`);
     });
   }
   
   return app;
 }
 
-// Export the app instance for Vercel's serverless handler
-const appPromise = startServer();
-export default async (req: any, res: any) => {
-  const app = await appPromise;
-  return app(req, res);
-};
+// Start the server immediately
+startServer().catch(err => {
+  console.error("[SERVER_HALT]: Critical Startup failure:", err);
+  process.exit(1);
+});

@@ -585,6 +585,9 @@ export default function App() {
       const streamUrl = fullState?.current_metrics?.ambientTheme?.stream;
       if (!streamUrl) return;
 
+      // Update state IMMEDIATELY for visual responsiveness
+      setAudioEnabled(true);
+
       if (audio.src !== streamUrl) {
           audio.src = streamUrl;
           audio.load(); // Re-trigger load for the new source
@@ -593,14 +596,12 @@ export default function App() {
       try {
         // We use a simpler direct play call to ensure responsiveness
         await audio.play();
-        setAudioEnabled(true);
       } catch (e) {
         console.warn("Audio Playback: Retrying with direct load...", e);
         // Force a reload and retry on failure
         audio.load();
         try {
            await audio.play();
-           setAudioEnabled(true);
         } catch (err) {
            console.error("Audio playback total failure:", err);
            setAudioEnabled(false);
@@ -682,7 +683,13 @@ export default function App() {
     };
 
     fetchTelemetry(); // Initial burst
-    const orchestratorPoll = setInterval(fetchTelemetry, 1500); 
+    
+    const orchestratorPoll = setInterval(() => {
+      // Only poll when the tab is active to avoid hitting rate limits while sitting idle
+      if (document.visibilityState === 'visible') {
+        fetchTelemetry();
+      }
+    }, 30000); 
     
     return () => clearInterval(orchestratorPoll);
   }, []);

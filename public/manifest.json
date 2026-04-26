@@ -1,7 +1,7 @@
 {
-  "name": "Dark Galaxy Explorer",
+  "name": "Kaspa Galaxy Station",
   "short_name": "Galaxy",
-  "description": "An interactive 3D dark galaxy with stars and planets.",
+  "description": "The ultimate visual mission control for the Kaspa BlockDAG Network.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#020205",
