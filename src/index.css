@@ -6,6 +6,44 @@
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
 }
 
+@utility pt-safe {
+  padding-top: 0;
+  padding-top: env(safe-area-inset-top);
+}
+@utility pb-safe {
+  padding-bottom: 0;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+@utility pl-safe {
+  padding-left: 0;
+  padding-left: env(safe-area-inset-left);
+}
+@utility pr-safe {
+  padding-right: 0;
+  padding-right: env(safe-area-inset-right);
+}
+
+@utility mt-safe {
+  margin-top: 0;
+  margin-top: env(safe-area-inset-top);
+}
+@utility top-safe {
+  top: 0;
+  top: env(safe-area-inset-top);
+}
+@utility bottom-safe {
+  bottom: 0;
+  bottom: env(safe-area-inset-bottom);
+}
+@utility left-safe {
+  left: 0;
+  left: env(safe-area-inset-left);
+}
+@utility right-safe {
+  right: 0;
+  right: env(safe-area-inset-right);
+}
+
 :root {
   --color-bg: #030303;
   --color-nebula-1: #1a0b3a;

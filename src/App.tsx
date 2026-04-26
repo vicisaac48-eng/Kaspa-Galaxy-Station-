@@ -714,8 +714,8 @@ export default function App() {
       <div className="nebula-bg" />
       
       {/* UI Overlay (Advanced Kaspa Branding) */}
-      <div className="absolute top-safe pt-4 md:pt-10 left-4 md:left-10 w-fit z-50 pointer-events-none">
-        <div className="flex flex-col gap-2">
+      <div className="absolute top-0 left-0 pt-safe pl-safe p-4 md:p-10 w-fit z-50 pointer-events-none">
+        <div className="flex flex-col gap-2 pt-2 sm:pt-0">
           <div className="relative">
              <div className="absolute -inset-4 bg-blue-500/10 blur-xl rounded-full" />
              <h1 className="text-[20px] sm:text-[44px] md:text-[80px] font-black tracking-[-1px] md:tracking-[-4px] leading-[0.85] uppercase text-white m-0 drop-shadow-2xl">
@@ -764,8 +764,8 @@ export default function App() {
 
       {/* Market Telemetry - Top Right (Professional HUD Layout) */}
       {fullState?.current_metrics && (
-        <div className="absolute top-6 right-6 md:top-8 md:right-8 z-50 flex flex-col items-end gap-2 font-mono pointer-events-none select-none max-w-[200px] sm:max-w-none">
-          <div className="flex items-center gap-3 bg-black/60 backdrop-blur-md border border-white/10 px-3 py-1.5 rounded-lg shadow-2xl border-r-4 border-r-blue-500">
+        <div className="absolute top-0 right-0 pt-safe pr-safe p-6 md:p-8 z-50 flex flex-col items-end gap-2 font-mono pointer-events-none select-none max-w-[200px] sm:max-w-none">
+          <div className="mt-2 sm:mt-0 flex items-center gap-3 bg-black/60 backdrop-blur-md border border-white/10 px-3 py-1.5 rounded-lg shadow-2xl border-r-4 border-r-blue-500">
             <div className="flex flex-col">
                <span className="text-[7px] text-blue-400 font-bold tracking-widest uppercase">MARKET_PRICE</span>
                <div className="flex items-baseline gap-1.5">
@@ -817,8 +817,8 @@ export default function App() {
 
       {/* Professional Signal News Feed - Bottom Full Width Ticker */}
       {fullState?.current_metrics?.news && (
-        <div className="absolute bottom-0 left-0 w-full z-50 pointer-events-none pb-safe sm:pb-0">
-           <div className="flex items-center gap-3 bg-black/80 backdrop-blur-xl px-4 py-2 sm:py-1.5 border-t border-blue-500/20 shadow-[0_-5px_30px_rgba(0,0,0,0.8)]">
+        <div className="absolute bottom-0 left-0 w-full z-50 pointer-events-none pb-safe">
+           <div className="flex items-center gap-3 bg-black/80 backdrop-blur-xl px-4 py-3 sm:py-1.5 border-t border-blue-500/20 shadow-[0_-5px_30px_rgba(0,0,0,0.8)]">
               <div className="flex items-center gap-2 border-r border-white/10 pr-3 shrink-0">
                  <div className={`w-1.5 h-1.5 ${isAiProcessing ? 'bg-amber-500' : 'bg-blue-500'} rounded-full animate-pulse shadow-[0_0_8px_currentColor]`} />
                  <span className="text-[8px] sm:text-[9px] text-blue-400 font-black tracking-widest uppercase hidden sm:inline">{isAiProcessing ? 'AI_PROCESSING' : 'LIVE_SIGNAL'}</span>
