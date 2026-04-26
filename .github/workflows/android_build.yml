@@ -60,8 +60,11 @@ jobs:
         uses: softprops/action-gh-release@v1
         if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
         with:
-          tag_name: latest
-          name: Latest Build
+          tag_name: build-${{ github.run_number }}
+          name: Build ${{ github.run_number }}
           files: android/app/build/outputs/apk/debug/app-debug.apk
+          body: |
+            Automated build for Kaspa Galaxy Station.
+            Download the APK below.
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
