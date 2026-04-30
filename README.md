@@ -11,10 +11,12 @@ The Kaspa network is a living, breathing blockDAG with unprecedented speed and e
 
 ## 🛠 Features
 - **Neural Telemetry Engine:** Real-time data streams for Kaspa Price, Hashrate, Market Cap, and Blocks per Second.
-- **Atmospheric BlockDAG Visualizer:** An interactive 3D stellar map using Three.js and GHOSTDAG-inspired rendering.
+- **Atmospheric BlockDAG Visualizer:** An interactive 3D stellar map using Three.js and GHOSTDAG-inspired rendering with dynamic cluster nodes.
+- **Resonance Stability Monitoring:** A specialized visual feedback system that notifies operators of DAG state stabilization and telemetry synchronization.
+- **Neural Uplink UI:** A floating intelligent interface for protocol querying and real-time network assistance.
+- **Notch-Adaptive Interface:** Specialized safe-area utility integration ensures the HUD remains clear of status bars and hardware notches on all mobile devices.
+- **Professional Branding:** Custom-engineered vector assets and icons optimized for high-density displays and APK deployment.
 - **SRE Intelligence HUD:** Professional-grade technical readouts and "Neural Monitor" logs providing deep network insights.
-- **Global News Intelligence:** A multi-source news aggregator tracking KAS technological milestones and protocol upgrades.
-- **Adaptive Mobile Interface:** A fully responsive "HUD-first" design, optimized for both mission control desks (desktops) and field units (mobile).
 
 ## 📡 Technicial Core
 - **Frontend:** React 18+, Three.js (@react-three/fiber), GSAP for cinematic transitions, Tailwind CSS for the HUD.
@@ -43,6 +45,24 @@ The Kaspa network is a living, breathing blockDAG with unprecedented speed and e
 
 ## 🤝 Open Source
 This project is open-source. We welcome security specialists, protocol engineers, and UI designers to contribute to the next generation of Kaspa visualization.
+
+## 📱 Deployment & APK Configuration
+
+To ensure the **Neural Network Intelligence** and **Telemetry Proxy** work correctly when deployed to GitHub Pages or built as an APK:
+
+1. **AI & Gemini API Key:**
+   - The station uses a **Hybrid Neural Infrastructure**.
+   - **Local Heuristics:** Works immediately without any setup. Provides smart insights based on live network telemetry.
+   - **LLM Insights:** Requires a `GEMINI_API_KEY`. In development, set this in the AI Studio settings. In production, satisfy this variable on your backend server.
+
+2. **Environment Variables:**
+   - `GEMINI_API_KEY`: Required on the backend server for generative LLM insights.
+   - `VITE_API_BASE_URL`: (Critical for APKs) Set this in your frontend environment if your backend is hosted separately (e.g., `https://your-backend.herokuapp.com`). APK builds will look for the API here.
+
+3. **APK Build (Capacitor):**
+   - The app is Capacitor-ready.
+   - Ensure `VITE_API_BASE_URL` in `.env` points to your public API before running `npm run build`.
+   - Run `npm run cap:sync` to manifest assets to Android.
 
 ---
 *Built for the Kaspa Community. Powered by the fastest Decentralized Proof-of-Work network in existence.*

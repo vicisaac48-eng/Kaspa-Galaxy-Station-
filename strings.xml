@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Kaspa Galaxy Station</string>
+    <string name="title_activity_main">Kaspa Galaxy Station</string>
+    <string name="package_name">com.kaspa.galaxystation</string>
+    <string name="custom_url_scheme">com.kaspa.galaxystation</string>
+</resources>

@@ -1,0 +1,33 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="512" height="512" rx="128" fill="#020205"/>
+  <defs>
+    <radialGradient id="paint0_radial" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(256 256) rotate(90) scale(256)">
+      <stop stop-color="#0E1A2B"/>
+      <stop offset="1" stop-color="#020205"/>
+    </radialGradient>
+    <linearGradient id="paint1_linear" x1="128" y1="128" x2="384" y2="384" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#70C7BA"/>
+      <stop offset="1" stop-color="#3B82F6"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="128" fill="url(#paint0_radial)"/>
+  
+  <!-- Stylized DAG Cluster / K -->
+  <path d="M160 120V392M160 256L352 120M240 256L352 392" stroke="url(#paint1_linear)" stroke-width="40" stroke-linecap="round" stroke-linejoin="round"/>
+  
+  <!-- Nodes -->
+  <circle cx="160" cy="120" r="12" fill="white" />
+  <circle cx="160" cy="392" r="12" fill="white" />
+  <circle cx="160" cy="256" r="12" fill="white" />
+  <circle cx="240" cy="256" r="12" fill="white" />
+  <circle cx="352" cy="120" r="12" fill="white" />
+  <circle cx="352" cy="392" r="12" fill="white" />
+  
+  <!-- Glowing effect particles -->
+  <circle cx="100" cy="100" r="2" fill="#70C7BA" opacity="0.6">
+    <animate attributeName="opacity" values="0.6;0.2;0.6" dur="3s" repeatCount="indefinite" />
+  </circle>
+  <circle cx="400" cy="400" r="3" fill="#3B82F6" opacity="0.4">
+    <animate attributeName="opacity" values="0.4;0.8;0.4" dur="4s" repeatCount="indefinite" />
+  </circle>
+</svg>
